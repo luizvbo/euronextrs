@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .long("format")
                 .value_name("FORMAT")
                 .help("Output format string: use %p for price, %o for since open, %O for since open percentage, %c for since close, %C for since close percentage")
-                .default_value("%p - Open: %o (%O) - Close: %c (%C)")
+                .default_value("%p | Open: %o (%O) | Close: %c (%C)")
                 .num_args(1),
         )
         .get_matches();
