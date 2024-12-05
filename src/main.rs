@@ -21,10 +21,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Extract the required data
     let price_selector = Selector::parse("#header-instrument-price").unwrap();
-    let since_open_selector = Selector::parse("div:contains('Since Open') + span").unwrap();
-    let since_open_percent_selector = Selector::parse("div:contains('Since Open') + span + span").unwrap();
-    let since_previous_selector = Selector::parse("div:contains('Since Previous Close') + span").unwrap();
-    let since_previous_percent_selector = Selector::parse("div:contains('Since Previous Close') + span + span").unwrap();
+    let since_open_selector = Selector::parse("div + span").unwrap();
+    let since_open_percent_selector = Selector::parse("div + span + span").unwrap();
+    let since_previous_selector = Selector::parse("div + span").unwrap();
+    let since_previous_percent_selector = Selector::parse("div + span + span").unwrap();
 
     // Extract the data
     let price = document
