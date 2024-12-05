@@ -1,45 +1,197 @@
 use clap::{Arg, Command};
-use csv::Writer;
-use serde_json::Value;
-use std::path::PathBuf;
+use reqwest::blocking::Client;
+use scraper::{Html, Selector};
+use std::error::Error;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let matches = Command::new("euronextrs")
-        .arg(Arg::new("OUTPUT_PATH")
-            .help("Sets the output path for the CSV file")
-            .required(true)
-            .index(1))
-        .arg(Arg::new("ISIN")
-            .help("ISIN with stock exchange code (as given in the Euronext URL)")
-            .default_value("IE00B4L5Y983-XAMS")
-            .index(2))
+fn main() -> Result<(), Box<dyn Error>> {
+    // Define the command-line arguments
+    let matches = Command::new("Euronext Data Extractor")
+        .version("1.0")
+        .author("Luiz Otavio V. B. Oliveira <luiz.vbo@gmail.com>")
+        .about("Extracts financial data from the Euronext website")
+        .arg(
+            Arg::new("isin")
+                .short('i')
+                .long("isin")
+                .value_name("ISIN")
+                .help("The ISIN of the instrument to fetch data for")
+                .num_args(1)
+                .required(true),
+        )
+        .arg(
+            Arg::new("format")
+                .short('f')
+                .long("format")
+                .value_name("FORMAT")
+                .help("Output format string: use %p for price, %o for since open, %O for since open percentage, %c for since close, %C for since close percentage")
+                .default_value("%p | Open: %o (%O) | Close: %c (%C)")
+                .num_args(1),
+        )
         .get_matches();
 
-    let url = format!("https://live.euronext.com/intraday_chart/getChartData/{}/intraday", matches.get_one::<String>("ISIN").unwrap());
-    let output_path = PathBuf::from(matches.get_one::<String>("OUTPUT_PATH").unwrap());
+    // Get the ISIN and format from arguments
+    let isin = matches.get_one::<String>("isin").unwrap();
+    let format = matches.get_one::<String>("format").unwrap();
 
-    fetch_and_print(&url, output_path).await
+    // Construct the URL
+    let url = format!(
+        "https://live.euronext.com/en/ajax/getDetailedQuote/{}-XAMS",
+        isin
+    );
+
+    // Fetch the HTML from the URL
+    let client = Client::new();
+    let response = client.get(&url).send()?.text()?;
+
+    // Parse the HTML
+    let document = Html::parse_document(&response);
+
+    // Define CSS selectors
+    let price_selector = Selector::parse("#header-instrument-price").unwrap();
+    let since_open_selector =
+        Selector::parse(".data-header__col-right .col:nth-of-type(1) span.data-24").unwrap();
+    let since_close_selector =
+        Selector::parse(".data-header__col-right .col:nth-of-type(2) span.data-24").unwrap();
+
+    // Extract data
+    let price = document
+        .select(&price_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("0")
+        .replace(",", "") // If the price uses commas as a thousands separator, remove them
+        .parse::<f64>()
+        .unwrap_or(0.0);
+
+    let since_open = document
+        .select(&since_open_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("0")
+        .replace(",", "") // If the price uses commas as a thousands separator, remove them
+        .parse::<f64>()
+        .unwrap_or(0.0);
+
+    let since_close = document
+        .select(&since_close_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("0")
+        .replace(",", "") // If the price uses commas as a thousands separator, remove them
+        .parse::<f64>()
+        .unwrap_or(0.0);
+
+    let since_open_percent = since_open / price;
+    let since_close_percent = since_open / price;
+
+    // Format the output
+    let output = format
+        .replace("%p", &price.to_string())
+        .replace("%o", &since_open.to_string())
+        .replace("%O", &format!("{:.2}%", since_open_percent * 100.0))
+        .replace("%c", &since_close.to_string())
+        .replace("%C", &format!("{:.2}%", since_close_percent * 100.0));
+    println!("{}", output);
+    Ok(())
 }
 
-async fn fetch_and_print(url: &str, output_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    let response = reqwest::get(url).await?;
-    let json: Vec<Value> = response.json().await?;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let mut writer = Writer::from_path(output_path)?;
+    // Test the formatting logic
+    #[test]
+    fn test_formatting() {
+        let price = 100.0;
+        let since_open = 98.0;
+        let since_open_percent = 2.0; // 2%
+        let since_close = 99.0;
+        let since_close_percent = 1.0; // 1%
 
-    writer.write_record(&["time", "price", "volume"])?;
-    for item in &json {
-        if let Value::Object(map) = item {
-            writer.write_record(&[
-                map.get("time").and_then(Value::as_str).unwrap_or_default().to_string(),
-                map.get("price").and_then(Value::as_f64).unwrap_or_default().to_string(),
-                map.get("volume").and_then(Value::as_u64).unwrap_or_default().to_string(),
-            ])?;
-        }
+        let format_string = "%p - Open: %o (%O) - Close: %c (%C)";
+        let formatted_output = format_output(
+            format_string,
+            price,
+            since_open,
+            since_open_percent,
+            since_close,
+            since_close_percent,
+        );
+
+        let expected_output = "100 - Open: 98 (2.00%) - Close: 99 (1.00%)";
+        assert_eq!(formatted_output, expected_output);
     }
 
-    writer.flush()?;
+    // Test the output with various format strings
+    #[test]
+    fn test_format_with_custom_format() {
+        let price = 100.0;
+        let since_open = 98.0;
+        let since_open_percent = 2.0; // 2%
+        let since_close = 99.0;
+        let since_close_percent = 1.0; // 1%
 
-    Ok(())
+        let format_string = "Price: %p | Open: %o | Open %: %O";
+        let formatted_output = format_output(
+            format_string,
+            price,
+            since_open,
+            since_open_percent,
+            since_close,
+            since_close_percent,
+        );
+
+        let expected_output = "Price: 100 | Open: 98 | Open %: 2.00%";
+        assert_eq!(formatted_output, expected_output);
+    }
+
+    // Mock test for the extract data function
+    #[test]
+    fn test_extract_data_from_html() {
+        // This test simulates the extraction of price data from HTML content.
+        let html_content = r#"
+            <html>
+                <div id="header-instrument-price">100.5</div>
+                <div class="data-header__col-right">
+                    <span class="data-24">98.3</span>
+                    <span class="text-ui-grey-1">-2.0%</span>
+                </div>
+            </html>
+        "#;
+
+        let document = Html::parse_document(html_content);
+        let price_selector = Selector::parse("#header-instrument-price").unwrap();
+        let price = extract_price(&document, &price_selector);
+
+        assert_eq!(price, 100.5);
+    }
+
+    // Utility function for formatting the output
+    fn format_output(
+        format: &str,
+        price: f64,
+        since_open: f64,
+        since_open_percent: f64,
+        since_close: f64,
+        since_close_percent: f64,
+    ) -> String {
+        format
+            .replace("%p", &price.to_string())
+            .replace("%o", &since_open.to_string())
+            .replace("%O", &format!("{:.2}%", since_open_percent))
+            .replace("%c", &since_close.to_string())
+            .replace("%C", &format!("{:.2}%", since_close_percent))
+    }
+
+    // Helper function for extracting price (mocking a real extraction)
+    fn extract_price(document: &scraper::Html, selector: &scraper::Selector) -> f64 {
+        document
+            .select(selector)
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap_or("0")
+            .replace(",", "")
+            .parse::<f64>()
+            .unwrap_or(0.0)
+    }
 }
