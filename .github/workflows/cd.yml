@@ -1,0 +1,92 @@
+name: Publish Crate and Release Binaries
+
+on:
+  release:
+    types: [created]  # Trigger on release creation
+
+jobs:
+  build_and_release:
+    name: Build and Release Binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os_name: Linux_x86_64
+          - target: i686-unknown-linux-gnu
+            os_name: Linux_32-bit
+          - target: aarch64-unknown-linux-gnu
+            os_name: Linux_arm64
+          - target: x86_64-apple-darwin
+            os_name: Darwin_x86_64
+          - target: aarch64-apple-darwin
+            os_name: Darwin_arm64
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      # Set up Rust environment for each target
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      # Install cross to handle cross-compiling
+      - name: Install cross
+        run: cargo install cross
+
+      # Build the crate for the target platform
+      - name: Build for ${{ matrix.os_name }}
+        run: cross build --target ${{ matrix.target }} --release
+
+      # Rename the binary with the target platform and tag
+      - name: Rename binary
+        run: |
+          target=${{ matrix.target }}
+          target_modified=$(echo "$target" | tr '[:upper:]' '[:lower:]' | tr '-' '_')
+
+          # Get the current tag
+          current_tag=$(git describe --tags)
+          prefix="${target_modified}_${current_tag}.bin"
+
+          # Rename the binary
+          cd ./target/${{ matrix.target }}/release/
+          mv euronextrs euronextrs"$prefix"
+
+      # Upload the binaries to GitHub Releases
+      - name: Upload Release Binary
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ./target/${{ matrix.target }}/release/euronextrs${{ matrix.target }}_${current_tag}.bin
+
+  publish_crate:
+    name: Publish Crate to crates.io
+    needs: build_and_release  # This ensures the crate is built before publishing
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      # Set up Rust environment
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      # Install cargo-release if not cached
+      - name: Install cargo-release
+        run: cargo install cargo-release
+
+      # Log in to crates.io
+      - name: Log in to crates.io
+        run: cargo login ${{ secrets.CRATES_IO_API_TOKEN }}
+
+      # Publish the crate to crates.io
+      - name: Publish crate to crates.io
+        run: cargo release publish --workspace --all-features --no-verify --no-confirm --execute
