@@ -23,10 +23,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .short('f')
                 .long("format")
                 .value_name("FORMAT")
-                .help("Output format: price, abs, rel")
-                .num_args(1)
-                .required(true)
-                .value_parser(["price", "abs", "rel"]),
+                .help("Output format string: use %p for price, %o for since open, %O for since open percentage, %c for since close, %C for since close percentage")
+                .default_value("%p - Open: %o (%O) - Close: %c (%C)")
+                .num_args(1),
         )
         .get_matches();
 
@@ -49,55 +48,49 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Define CSS selectors
     let price_selector = Selector::parse("#header-instrument-price").unwrap();
-    let since_open_selector = Selector::parse(".data-header__col-right .col:nth-of-type(1) span.data-24").unwrap();
-    let since_open_percent_selector = Selector::parse(".data-header__col-right .col:nth-of-type(1) span.text-ui-grey-1").unwrap();
-    let since_previous_selector = Selector::parse(".data-header__col-right .col:nth-of-type(2) span.data-24").unwrap();
-    let since_previous_percent_selector = Selector::parse(".data-header__col-right .col:nth-of-type(2) span.text-ui-grey-1").unwrap();
+    let since_open_selector =
+        Selector::parse(".data-header__col-right .col:nth-of-type(1) span.data-24").unwrap();
+    let since_close_selector =
+        Selector::parse(".data-header__col-right .col:nth-of-type(2) span.data-24").unwrap();
 
     // Extract data
     let price = document
         .select(&price_selector)
         .next()
         .and_then(|el| el.text().next())
-        .unwrap_or("N/A");
+        .unwrap_or("0")
+        .replace(",", "") // If the price uses commas as a thousands separator, remove them
+        .parse::<f64>()
+        .unwrap_or(0.0);
 
     let since_open = document
         .select(&since_open_selector)
         .next()
         .and_then(|el| el.text().next())
-        .unwrap_or("N/A");
+        .unwrap_or("0")
+        .replace(",", "") // If the price uses commas as a thousands separator, remove them
+        .parse::<f64>()
+        .unwrap_or(0.0);
 
-    let since_open_percent = document
-        .select(&since_open_percent_selector)
+    let since_close = document
+        .select(&since_close_selector)
         .next()
         .and_then(|el| el.text().next())
-        .unwrap_or("N/A");
+        .unwrap_or("0")
+        .replace(",", "") // If the price uses commas as a thousands separator, remove them
+        .parse::<f64>()
+        .unwrap_or(0.0);
 
-    let since_previous = document
-        .select(&since_previous_selector)
-        .next()
-        .and_then(|el| el.text().next())
-        .unwrap_or("N/A");
-
-    let since_previous_percent = document
-        .select(&since_previous_percent_selector)
-        .next()
-        .and_then(|el| el.text().next())
-        .unwrap_or("N/A");
+    let since_open_percent = since_open / price;
+    let since_close_percent = since_open / price;
 
     // Format the output
-    match format.as_str() {
-        "price" => println!("Price: {}", price),
-        "abs" => println!(
-            "Price: {}, Since Open: {} ({}), Since Previous Close: {} ({})",
-            price, since_open, since_open_percent, since_previous, since_previous_percent
-        ),
-        "rel" => println!(
-            "Price: {}, Since Open: {}, Since Previous Close: {}",
-            price, since_open_percent, since_previous_percent
-        ),
-        _ => unreachable!("Invalid format"),
-    }
-
+    let output = format
+        .replace("%p", &price.to_string())
+        .replace("%o", &since_open.to_string())
+        .replace("%O", &format!("{:.2}%", since_open_percent * 100.0))
+        .replace("%c", &since_close.to_string())
+        .replace("%C", &format!("{:.2}%", since_close_percent * 100.0));
+    println!("{}", output);
     Ok(())
 }
