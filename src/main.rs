@@ -1,45 +1,66 @@
-use clap::{Arg, Command};
-use csv::Writer;
-use serde_json::Value;
-use std::path::PathBuf;
+use reqwest::blocking::Client;
+use scraper::{Html, Selector};
+use std::error::Error;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let matches = Command::new("euronextrs")
-        .arg(Arg::new("OUTPUT_PATH")
-            .help("Sets the output path for the CSV file")
-            .required(true)
-            .index(1))
-        .arg(Arg::new("ISIN")
-            .help("ISIN with stock exchange code (as given in the Euronext URL)")
-            .default_value("IE00B4L5Y983-XAMS")
-            .index(2))
-        .get_matches();
+fn main() -> Result<(), Box<dyn Error>> {
+    // Get the ISIN from the user
+    println!("Enter the ISIN:");
+    let mut isin = String::new();
+    std::io::stdin().read_line(&mut isin)?;
+    let isin = isin.trim();
 
-    let url = format!("https://live.euronext.com/intraday_chart/getChartData/{}/intraday", matches.get_one::<String>("ISIN").unwrap());
-    let output_path = PathBuf::from(matches.get_one::<String>("OUTPUT_PATH").unwrap());
+    // Construct the URL
+    let url = format!("https://live.euronext.com/en/ajax/getDetailedQuote/{}-XAMS", isin);
 
-    fetch_and_print(&url, output_path).await
-}
+    // Fetch the HTML from the URL
+    let client = Client::new();
+    let response = client.get(&url).send()?.text()?;
+    
+    // Parse the HTML
+    let document = Html::parse_document(&response);
 
-async fn fetch_and_print(url: &str, output_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    let response = reqwest::get(url).await?;
-    let json: Vec<Value> = response.json().await?;
+    // Extract the required data
+    let price_selector = Selector::parse("#header-instrument-price").unwrap();
+    let since_open_selector = Selector::parse("div:contains('Since Open') + span").unwrap();
+    let since_open_percent_selector = Selector::parse("div:contains('Since Open') + span + span").unwrap();
+    let since_previous_selector = Selector::parse("div:contains('Since Previous Close') + span").unwrap();
+    let since_previous_percent_selector = Selector::parse("div:contains('Since Previous Close') + span + span").unwrap();
 
-    let mut writer = Writer::from_path(output_path)?;
+    // Extract the data
+    let price = document
+        .select(&price_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("N/A");
 
-    writer.write_record(&["time", "price", "volume"])?;
-    for item in &json {
-        if let Value::Object(map) = item {
-            writer.write_record(&[
-                map.get("time").and_then(Value::as_str).unwrap_or_default().to_string(),
-                map.get("price").and_then(Value::as_f64).unwrap_or_default().to_string(),
-                map.get("volume").and_then(Value::as_u64).unwrap_or_default().to_string(),
-            ])?;
-        }
-    }
+    let since_open = document
+        .select(&since_open_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("N/A");
 
-    writer.flush()?;
+    let since_open_percent = document
+        .select(&since_open_percent_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("N/A");
+
+    let since_previous = document
+        .select(&since_previous_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("N/A");
+
+    let since_previous_percent = document
+        .select(&since_previous_percent_selector)
+        .next()
+        .and_then(|el| el.text().next())
+        .unwrap_or("N/A");
+
+    // Print the results
+    println!("Price: {}", price);
+    println!("Since Open: {} ({})", since_open, since_open_percent);
+    println!("Since Previous Close: {} ({})", since_previous, since_previous_percent);
 
     Ok(())
 }
