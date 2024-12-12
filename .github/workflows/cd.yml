@@ -116,6 +116,10 @@ jobs:
     - name: Checkout source code
       uses: actions/checkout@v4
 
+    - name: Install prerequisites
+      shell: bash
+      run: sudo apt-get -y update ; sudo apt-get -y install libssl-dev 
+
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
