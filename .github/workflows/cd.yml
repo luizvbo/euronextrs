@@ -1,11 +1,13 @@
 name: Release binaries
 
+# on:
+#   release:
+#     types: [created]  # Trigger on release creation
+
+on: [push]
+
 env:
   CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
-
-on:
-  release:
-    types: [created]  # Trigger on release creation
 
 jobs:
   all-jobs:
@@ -201,9 +203,6 @@ jobs:
 
         # README, LICENSE and CHANGELOG files
         cp "README.md" "LICENSE" "CHANGELOG.md" "$ARCHIVE_DIR"
-
-        # Man page
-        cp 'target/${{ matrix.job.target }}/release/build/${{ needs.crate_metadata.outputs.name }}'-*/out/assets/manual/bat.1 "$ARCHIVE_DIR"
 
         # base compressed package
         pushd "${PKG_STAGING}/" >/dev/null
