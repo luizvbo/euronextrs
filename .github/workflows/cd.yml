@@ -53,7 +53,7 @@ jobs:
 
           # Rename the binary
           cd ./target/${{ matrix.target }}/release/
-          mv euronextrs euronextrs"$prefix"
+          mv exchangers exchangers"$prefix"
 
       # Upload the binaries to GitHub Releases
       - name: Upload Release Binary
@@ -61,7 +61,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: ./target/${{ matrix.target }}/release/euronextrs${{ matrix.target }}_${current_tag}.bin
+          files: ./target/${{ matrix.target }}/release/exchangers${{ matrix.target }}_${current_tag}.bin
 
   publish_crate:
     name: Publish Crate to crates.io

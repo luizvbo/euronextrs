@@ -5,7 +5,7 @@ use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Define the command-line arguments
-    let matches = Command::new("Euronext Data Extractor")
+    let matches = Command::new("Exchange Data Extractor")
         .version("1.0")
         .author("Luiz Otavio V. B. Oliveira <luiz.vbo@gmail.com>")
         .about("Extracts financial data from the Euronext website")
