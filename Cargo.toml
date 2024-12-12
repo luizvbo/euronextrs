@@ -13,20 +13,3 @@ scraper = "0.21"
 tokio = { version = "1.42", features = ["full"] }
 clap = { version = "4.5.22" }
 
-[workspace.metadata.cross]
-targets = [
-    "aarch64-unknown-linux-gnu",
-    "aarch64-unknown-linux-musl",
-    "arm-unknown-linux-gnueabihf",
-    "arm-unknown-linux-musleabihf",
-    "i686-unknown-linux-gnu",
-    "i686-unknown-linux-musl",
-    "x86_64-unknown-linux-gnu",
-    "x86_64-unknown-linux-musl",
-]
-
-[workspace.metadata.cross.targets.*]
-pre-build = [
-    "dpkg --add-architecture $CROSS_DEB_ARCH",
-    "apt-get update && apt-get --assume-yes install libssl-dev:$CROSS_DEB_ARCH"
-]
