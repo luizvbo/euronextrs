@@ -118,7 +118,8 @@ jobs:
 
     - name: Install prerequisites
       shell: bash
-      run: sudo apt-get -y update ; sudo apt-get -y install libssl-dev 
+      run: sudo apt-get -y update ; sudo apt-get -y install libssl-dev pkg-config
+
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
