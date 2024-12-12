@@ -2,7 +2,6 @@ name: Release binaries
 
 env:
   CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
-  MSRV_FEATURES: --no-default-features --features minimal-application,bugreport,build-assets
 
 on:
   release:
@@ -66,9 +65,9 @@ jobs:
         toolchain: ${{ needs.crate_metadata.outputs.msrv }}
         components: clippy
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      run: cargo clippy --locked --all-targets ${{ env.MSRV_FEATURES }}
+      run: cargo clippy --locked --all-targets
     - name: Run tests
-      run: cargo test --locked ${{ env.MSRV_FEATURES }}
+      run: cargo test --locked
 
   test:
     name: Run tests with system wide configuration
@@ -196,22 +195,15 @@ jobs:
         PKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/package"
         ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
         mkdir -p "${ARCHIVE_DIR}"
-        mkdir -p "${ARCHIVE_DIR}/autocomplete"
 
         # Binary
         cp "${{ steps.bin.outputs.BIN_PATH }}" "$ARCHIVE_DIR"
 
         # README, LICENSE and CHANGELOG files
-        cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
+        cp "README.md" "LICENSE" "CHANGELOG.md" "$ARCHIVE_DIR"
 
         # Man page
         cp 'target/${{ matrix.job.target }}/release/build/${{ needs.crate_metadata.outputs.name }}'-*/out/assets/manual/bat.1 "$ARCHIVE_DIR"
-
-        # Autocompletion files
-        cp 'target/${{ matrix.job.target }}/release/build/${{ needs.crate_metadata.outputs.name }}'-*/out/assets/completions/bat.bash "$ARCHIVE_DIR/autocomplete/${{ needs.crate_metadata.outputs.name }}.bash"
-        cp 'target/${{ matrix.job.target }}/release/build/${{ needs.crate_metadata.outputs.name }}'-*/out/assets/completions/bat.fish "$ARCHIVE_DIR/autocomplete/${{ needs.crate_metadata.outputs.name }}.fish"
-        cp 'target/${{ matrix.job.target }}/release/build/${{ needs.crate_metadata.outputs.name }}'-*/out/assets/completions/_bat.ps1 "$ARCHIVE_DIR/autocomplete/_${{ needs.crate_metadata.outputs.name }}.ps1"
-        cp 'target/${{ matrix.job.target }}/release/build/${{ needs.crate_metadata.outputs.name }}'-*/out/assets/completions/bat.zsh "$ARCHIVE_DIR/autocomplete/${{ needs.crate_metadata.outputs.name }}.zsh"
 
         # base compressed package
         pushd "${PKG_STAGING}/" >/dev/null
