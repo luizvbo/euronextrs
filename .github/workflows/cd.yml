@@ -2,7 +2,6 @@ name: Release binaries
 
 env:
   CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
-  MSRV_FEATURES: --no-default-features --features minimal-application,bugreport,build-assets
 
 on:
   release:
@@ -66,9 +65,9 @@ jobs:
         toolchain: ${{ needs.crate_metadata.outputs.msrv }}
         components: clippy
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      run: cargo clippy --locked --all-targets ${{ env.MSRV_FEATURES }}
+      run: cargo clippy --locked --all-targets
     - name: Run tests
-      run: cargo test --locked ${{ env.MSRV_FEATURES }}
+      run: cargo test --locked
 
   test:
     name: Run tests with system wide configuration
