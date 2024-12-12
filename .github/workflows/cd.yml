@@ -116,10 +116,17 @@ jobs:
     - name: Checkout source code
       uses: actions/checkout@v4
 
+    - name: Show openssl version 
+      shell: bash
+      run: openssl version -d
+
     - name: Install prerequisites
       shell: bash
       run: sudo apt-get -y update ; sudo apt-get -y install libssl-dev pkg-config
 
+    - name: Show openssl version again
+      shell: bash
+      run: openssl version -d
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
