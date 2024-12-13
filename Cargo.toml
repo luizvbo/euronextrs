@@ -9,8 +9,8 @@ homepage = "https://github.com/luizvbo/exchange-rs"
 
 [dependencies]
 scraper = "0.21"
-tokio = { version = "1.42", features = ["full"] }
-clap = { version = "4.5.22" }
+tokio = { version = "1.42"}
+clap = { version = "4.5.22", features = ["derive"] }
 reqwest = { version = "0.12.9", features = ["blocking", "json"] }
 
 
