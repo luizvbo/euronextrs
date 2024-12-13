@@ -4,6 +4,8 @@ version = "0.1.1"
 edition = "2021"
 authors = ["Luiz Otavio V. B. Oliveira <luiz.vbo@gmail.com>"]
 homepage = "https://github.com/luizvbo/exchange-rs"
+description = "Command-line tool to fetch data from stock exchanges."
+license = "MIT"  
 
 [dependencies]
 scraper = "0.21"
