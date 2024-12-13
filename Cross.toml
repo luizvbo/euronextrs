@@ -9,15 +9,16 @@ pre-build = [
     "dpkg --add-architecture i386", 
     "apt-get update && apt-get -y install libssl-dev:i386"
 ]                 
-# [target.x86_64-unknown-linux-gnu]
-# pre-build = [
-#     "dpkg --add-architecture amd64", 
-#     "apt-get update && apt-get -y install libssl-dev:amd64"
-# ]                 
-#
-# [target.x86_64-unknown-linux-musl]
-# pre-build = [
-#     "dpkg --add-architecture amd64", 
-#     "apt-get update && apt-get -y install libssl-dev:amd64"
-# ]                 
-#
+
+[target.x86_64-unknown-linux-gnu]
+pre-build = [
+    # "dpkg --add-architecture amd64", 
+    "apt-get update && apt-get -y install libssl-dev"
+]                 
+
+[target.x86_64-unknown-linux-musl]
+pre-build = [
+    # "dpkg --add-architecture amd64", 
+    "apt-get update && apt-get -y install libssl-dev"
+]                 
+
