@@ -14,7 +14,7 @@ clap = { version = "4.5.22" }
 reqwest = { version = "0.12.9", features = ["blocking", "json"] }
 
 
-[target.'cfg(any(target_arch = "aarch64", target_arch = "arm", target_arch = "i686-unknown-linux-musl"))'.dependencies]
+[target.'cfg(any(target_arch = "aarch64", target_arch = "arm", target_env = "musl"))'.dependencies]
 reqwest = { version = "0.12.9", features = [
   "blocking",
   "json",
