@@ -11,5 +11,8 @@ homepage = "https://github.com/luizvbo/exchange-rs"
 scraper = "0.21"
 tokio = { version = "1.42", features = ["full"] }
 clap = { version = "4.5.22" }
-reqwest = { version = "0.12.9", features = ["blocking", "json", "native-tls-vendored"] }
+reqwest = { version = "0.12.9", features = ["blocking", "json"] }
 
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+reqwest = { version = "0.12.9", features = ["blocking", "json", "native-tls-vendored"] }
