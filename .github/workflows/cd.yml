@@ -1,10 +1,8 @@
 name: Release binaries
 
-# on:
-#   release:
-#     types: [created]  # Trigger on release creation
-
-on: [push]
+on:
+  release:
+    types: [created]  # Trigger on release creation
 
 env:
   CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
