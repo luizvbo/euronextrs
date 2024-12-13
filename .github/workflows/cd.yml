@@ -107,7 +107,7 @@ jobs:
     - name: Overwrite build command env variable
       if: matrix.job.use-cross
       shell: bash
-      run: echo "BUILD_CMD='PKG_CONFIG_ALLOW_CROSS=1 cross'" >> $GITHUB_ENV
+      run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
 
     - name: Show version information (Rust, cargo, GCC)
       shell: bash
