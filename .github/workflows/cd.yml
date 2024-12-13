@@ -1,11 +1,11 @@
 name: Release binaries
 
-env:
-  CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
-
 on:
   release:
     types: [created]  # Trigger on release creation
+
+env:
+  CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
 
 jobs:
   all-jobs:
@@ -14,9 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - crate_metadata
-      - ensure_cargo_fmt
       - min_version
-      - test
       - cargo-audit
       - build
     steps:
@@ -41,16 +39,6 @@ jobs:
       homepage: ${{ steps.crate_metadata.outputs.homepage }}
       msrv: '1.80'
 
-  ensure_cargo_fmt:
-    name: Ensure 'cargo fmt' has been run
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: rustfmt
-    - uses: actions/checkout@v4
-    - run: cargo fmt -- --check
-
   min_version:
     name: Minimum supported rust version
     runs-on: ubuntu-20.04
@@ -69,19 +57,6 @@ jobs:
     - name: Run tests
       run: cargo test --locked
 
-  test:
-    name: Run tests with system wide configuration
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Git checkout
-      uses: actions/checkout@v4
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-    - name: Build and install the crate
-      run: cargo install --locked --path .
-    - name: Run unit tests
-      run: cargo test --locked --release
-
   cargo-audit:
     name: cargo audit
     runs-on: ubuntu-latest
@@ -97,19 +72,19 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04, dpkg_arch: arm64,            use-cross: true }
-          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04, dpkg_arch: arm64,            use-cross: true }
-          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04, dpkg_arch: armhf,            use-cross: true }
-          - { target: arm-unknown-linux-musleabihf, os: ubuntu-20.04, dpkg_arch: musl-linux-armhf, use-cross: true }
-          - { target: i686-pc-windows-msvc        , os: windows-2019,                                              }
-          - { target: i686-unknown-linux-gnu      , os: ubuntu-20.04, dpkg_arch: i686,             use-cross: true }
-          - { target: i686-unknown-linux-musl     , os: ubuntu-20.04, dpkg_arch: musl-linux-i686,  use-cross: true }
-          - { target: x86_64-apple-darwin         , os: macos-13,                                                  }
-          - { target: aarch64-apple-darwin        , os: macos-14,                                                  }
-          - { target: x86_64-pc-windows-gnu       , os: windows-2019,                                              }
-          - { target: x86_64-pc-windows-msvc      , os: windows-2019,                                              }
-          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04, dpkg_arch: amd64,            use-cross: true }
-          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04, dpkg_arch: musl-linux-amd64, use-cross: true }
+          - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04,    use-cross: true }
+          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04,    use-cross: true }
+          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04,    use-cross: true } 
+          - { target: arm-unknown-linux-musleabihf, os: ubuntu-20.04,    use-cross: true }
+          - { target: i686-pc-windows-msvc        , os: windows-2019,                    } 
+          - { target: i686-unknown-linux-gnu      , os: ubuntu-20.04,    use-cross: true } 
+          - { target: i686-unknown-linux-musl     , os: ubuntu-20.04,    use-cross: true }
+          - { target: x86_64-apple-darwin         , os: macos-13,                        } 
+          - { target: aarch64-apple-darwin        , os: macos-14,                        }
+          - { target: x86_64-pc-windows-gnu       , os: windows-2019,                    } 
+          - { target: x86_64-pc-windows-msvc      , os: windows-2019,                    } 
+          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04,    use-cross: true }
+          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04,    use-cross: true }
     env:
       BUILD_CMD: cargo
     steps:
@@ -170,7 +145,7 @@ jobs:
       run: |
         # test only library unit tests and binary for arm-type targets
         unset CARGO_TEST_OPTIONS
-        unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--lib --bin ${{ needs.crate_metadata.outputs.name }}" ;; esac;
+        unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--bin ${{ needs.crate_metadata.outputs.name }}" ;; esac;
         echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
 
     - name: Run tests
@@ -201,9 +176,6 @@ jobs:
 
         # README, LICENSE and CHANGELOG files
         cp "README.md" "LICENSE" "CHANGELOG.md" "$ARCHIVE_DIR"
-
-        # Man page
-        cp 'target/${{ matrix.job.target }}/release/build/${{ needs.crate_metadata.outputs.name }}'-*/out/assets/manual/bat.1 "$ARCHIVE_DIR"
 
         # base compressed package
         pushd "${PKG_STAGING}/" >/dev/null

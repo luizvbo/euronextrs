@@ -1,10 +1,9 @@
 # This file is based on the work from https://github.com/denisidoro/navi,
 # licensed under the Apache 2.0 license. The license can be found in
 # https://github.com/denisidoro/navi/blob/master/LICENSE
+name: CI
 
 on: [push]
-
-name: CI
 
 env:
   MSRV_FEATURES: "--all-features"
