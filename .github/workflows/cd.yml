@@ -121,10 +121,7 @@ jobs:
 
     - name: Build
       shell: bash
-      run: |
-        [[ $matrix.job.embed_openssl == true ]] && \
-          echo 'openssl = { version = "0.10.68", features = ["vendored"] }' >> Cargo.toml; 
-        $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
+      run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
 
     - name: Set binary name & path
       id: bin
