@@ -14,7 +14,12 @@ struct Args {
     /// Output format string
     /// Use %p for price, %o for since open, %O for since open percentage,
     /// %c for since close, %C for since close percentage
-    #[arg(short, long, value_name = "FORMAT", default_value = "%p | Open: %o (%O) | Close: %c (%C)")]
+    #[arg(
+        short,
+        long,
+        value_name = "FORMAT",
+        default_value = "%p | Open: %o (%O) | Close: %c (%C)"
+    )]
     format: String,
 }
 
