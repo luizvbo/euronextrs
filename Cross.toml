@@ -1,15 +1,15 @@
-[target.aarch64-unknown-linux-musl]
-image = "openssl:aarch64"
+# [target.aarch64-unknown-linux-musl]
+# image = "openssl:aarch64"
 # pre-build = [
 #     "dpkg --add-architecture arm64", 
 #     "apt-get update && apt-get -y install libssl-dev:arm64"
 # ]                 
 
-[target.aarch64-unknown-linux-gnu]
-pre-build = [
-    "dpkg --add-architecture arm64", 
-    "apt-get update && apt-get -y install libssl-dev:arm64"
-]                 
+# [target.aarch64-unknown-linux-gnu]
+# pre-build = [
+#     "dpkg --add-architecture arm64", 
+#     "apt-get update && apt-get -y install libssl-dev:arm64"
+# ]                 
 
 [target.arm-unknown-linux-gnueabihf]
 pre-build = [
