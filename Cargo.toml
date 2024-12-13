@@ -1,16 +1,13 @@
 [package]
 name = "exchange-rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Luiz Otavio V. B. Oliveira <luiz.vbo@gmail.com>"]
 homepage = "https://github.com/luizvbo/exchange-rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 scraper = "0.21"
-tokio = { version = "1.42", features = ["full"] }
-clap = { version = "4.5.22" }
+clap = { version = "4.5.22", features = ["derive"] }
 reqwest = { version = "0.12.9", features = ["blocking", "json"] }
 
 
@@ -20,3 +17,8 @@ reqwest = { version = "0.12.9", features = [
   "json",
   "native-tls-vendored",
 ] }
+
+[profile.release]
+opt-level = "z"   # Optimize for size
+strip = true      # Strip debug information from the binary
+lto = "thin"      # Enable Link-Time Optimization (LTO)

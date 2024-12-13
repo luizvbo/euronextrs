@@ -1,42 +1,40 @@
-use clap::{Arg, Command};
+use clap::Parser;
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
 use std::error::Error;
 
+/// Extracts financial data from the Euronext website
+#[derive(Parser, Debug)]
+#[command(author, about, version)]
+struct Args {
+    /// The ISIN of the instrument to fetch data for
+    #[arg(value_name = "ISIN")]
+    isin: String,
+
+    /// Output format string
+    /// Use %p for price, %o for since open, %O for since open percentage,
+    /// %c for since close, %C for since close percentage
+    #[arg(
+        short,
+        long,
+        value_name = "FORMAT",
+        default_value = "%p | Open: %o (%O) | Close: %c (%C)"
+    )]
+    format: String,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
-    // Define the command-line arguments
-    let matches = Command::new("Exchange Data Extractor")
-        .version("1.0")
-        .author("Luiz Otavio V. B. Oliveira <luiz.vbo@gmail.com>")
-        .about("Extracts financial data from the Euronext website")
-        .arg(
-            Arg::new("isin")
-                .short('i')
-                .long("isin")
-                .value_name("ISIN")
-                .help("The ISIN of the instrument to fetch data for")
-                .num_args(1)
-                .required(true),
-        )
-        .arg(
-            Arg::new("format")
-                .short('f')
-                .long("format")
-                .value_name("FORMAT")
-                .help("Output format string: use %p for price, %o for since open, %O for since open percentage, %c for since close, %C for since close percentage")
-                .default_value("%p | Open: %o (%O) | Close: %c (%C)")
-                .num_args(1),
-        )
-        .get_matches();
+    // Parse the command-line arguments using the derive API
+    let args = Args::parse();
 
     // Get the ISIN and format from arguments
-    let isin = matches.get_one::<String>("isin").unwrap();
-    let format = matches.get_one::<String>("format").unwrap();
+    let isin = args.isin;
+    let format = args.format;
 
     // Construct the URL
     let url = format!(
-        "https://live.euronext.com/en/ajax/getDetailedQuote/{}-XAMS",
-        isin
+        "https://live.euronext.com/en/ajax/getDetailedQuote/{}",
+        isin.to_uppercase()
     );
 
     // Fetch the HTML from the URL
@@ -82,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(0.0);
 
     let since_open_percent = since_open / price;
-    let since_close_percent = since_open / price;
+    let since_close_percent = since_close / price;
 
     // Format the output
     let output = format
